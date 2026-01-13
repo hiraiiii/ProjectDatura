@@ -1,67 +1,30 @@
+
 import pandas as pd
-import numpy as np
 import lightgbm as lgb
-from bs4 import BeautifulSoup
-import random
-import requests
-import time
-import csv
 
-user_agent = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
-]
-headers = {
-    "User-Agent": random.choice(user_agent),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-}
-url =  'https://race.netkeiba.com/top/race_list.html?kaisai_date=' #今日のレース一覧ページURL
-base_url = "https://db.netkeiba.com" #netkeibaのベースURL
-today = time.strftime('%Y%m%d') # 今日の日付を取得
-print(f"Today's date: {today}")
+# 今日のレース情報をスクレイピングするモジュールをインポート
+from create_data import scrape_today
+# CSVを整形するモジュールをインポート
+import arrange_csv
 
-sleep_time = 20 # 本番では20秒くらいにする
+# 今日のレース情報をスクレイピングしてCSVに保存
+today_csv = scrape_today.scrape_today_race()
+"""
+# today_csvにrace.csvをコピー
+df_today = pd.read_csv('race.csv', low_memory=False) # race.csvを読み込み
+df_today.to_csv(today_csv, index=False) # race.csvに保存
 
-with open("today_race.csv", mode="a", newline="", encoding="utf-8") as f:
-    writer = csv.writer(f)
-    # ヘッダー行
-    writer.writerow(['race_id', '着順', '枠番', '馬番', '馬名', '性別', '年齢', '斤量', '騎手', 'タイム', '通過順位', '上り', 'オッズ', '人気', '馬体重','体重変化','レース名','日付','開催','クラス','芝ダート','距離','回り','馬場','天気','場id','場名'])
+# today_race.csvにarrange_csv.pyの処理を実行
+new_today_csv = arrange_csv.arrange_csv(today_csv)
 
-for i in range(10): # リトライ処理
-    try:
-        response = requests.get(url + today, headers=headers)
-        break
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}. Retrying ({i+1}/10)...")
-        time.sleep(300) # 300秒待ってからリトライ
-
-# レース一覧ページを取得
-soup1 = BeautifulSoup(response.content, 'html.parser')
-time.sleep(sleep_time)
-
-race_links = soup1.find_all('dd', class_='RaceList_Data')
-
-for race in race_links:
-    race_url = base_url + race.find('a')['href']
-
-    for j in range(10): # リトライ処理
-        try:
-            race_response = requests.get(race_url, headers=headers)
-            break
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}. Retrying ({j+1}/10)...")
-            time.sleep(300) # 300
-
-    # レース詳細ページを取得
-    soup2 = BeautifulSoup(race_response.content, 'html.parser')
-    time.sleep(sleep_time)
-
-    race_table = []
-
-    
-
-    
-
-
-
+# lgbm_modelで予測を実行
+model = lgb.Booster(model_file='lgbm_model.txt')
+data = pd.read_csv(new_today_csv)
+x = data.drop(columns=['race_id', '着順', '日付', 'タイム', '通過順位', '上り', '場名']) # 目的変数と不要な列を除外
+y_pred = model.predict(x)
+y_pred_binary = [1 if pred > 0.88 else 0 for pred in y_pred] # 二値化
+data['predicted'] = y_pred_binary
+data['prediction_score'] = y_pred
+data.to_csv('prediction_' + new_today_csv, index=False)
+print(f"Predictions saved to prediction_{new_today_csv}")
+"""
