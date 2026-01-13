@@ -9,7 +9,7 @@ import arrange_csv
 
 # 今日のレース情報をスクレイピングしてCSVに保存
 today_csv = scrape_today.scrape_today_race()
-"""
+
 # today_csvにrace.csvをコピー
 df_today = pd.read_csv('race.csv', low_memory=False) # race.csvを読み込み
 df_today.to_csv(today_csv, index=False) # race.csvに保存
@@ -27,4 +27,3 @@ data['predicted'] = y_pred_binary
 data['prediction_score'] = y_pred
 data.to_csv('prediction_' + new_today_csv, index=False)
 print(f"Predictions saved to prediction_{new_today_csv}")
-"""
