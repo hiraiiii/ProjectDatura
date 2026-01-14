@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-def scrape_today_race():
+def scrape_today_race(race_date):
     user_agent = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
@@ -19,14 +19,29 @@ def scrape_today_race():
         "User-Agent": random.choice(user_agent),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
     }
-    kaisai_url =  'https://race.netkeiba.com/top/?kaisai_date=20260105' #今日のレース一覧ページURL
+    kaisai_url =  'https://race.netkeiba.com/top/?kaisai_date=' #今日のレース一覧ページURL
     race_url = 'https://race.netkeiba.com/race/shutuba.html?race_id='
     race_url2 = '&rf=race_list'
     today = time.strftime('%Y%m%d') # 今日の日付を取得 本番ではこれを使う
 
     today_csv = today + "_race.csv"
 
-    sleep_time = 5 # 本番では20秒くらいにする
+    ids = {
+        '札幌': '01',
+        '函館': '02',
+        '福島': '03',
+        '新潟': '04',
+        '東京': '05',
+        '中山': '06',
+        '中京': '07',
+        '京都': '08',
+        '阪神': '09',
+        '小倉': '10'
+    }
+    condition_list = ['不良', '稍重', '稍', '重', '良']
+    weather_list = ['小雨', '晴', '曇', '雨', '雪']
+
+    sleep_time = 20 # 本番では20秒くらいにする
 
     with open(today_csv, mode="a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -38,7 +53,7 @@ def scrape_today_race():
     wait = WebDriverWait(driver, 10)
     for i in range(10): # リトライ処理
         try:
-            driver.get(kaisai_url) # 本番ではkaisai_url + todayにする
+            driver.get(kaisai_url + race_date) # 本番ではkaisai_url + todayにする
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#RaceTopRace')))
             soup1 = BeautifulSoup(driver.page_source, 'lxml')
             page_source = driver.page_source
@@ -70,7 +85,6 @@ def scrape_today_race():
                 # print("Request succeeded")
                 break
         soup2 = BeautifulSoup(driver.page_source, 'html.parser') # レース情報のスクレイピング
-        page_source = driver.page_source
         
         time.sleep(sleep_time)
 
@@ -81,7 +95,11 @@ def scrape_today_race():
             row = []
             if g in [0,1]: # ヘッダー行と不要行をスキップ
                 continue
-            row.append(race_id) #idの代わりに日付を追加
+            row.append(race_id) # race_idを追加
+
+            order = 0 # 着順は取得できないので0を初期値に設定
+            row.append(order)
+
             for num,td in enumerate(tr.select('td')):
                 if num in [2, 7, 9, 10, 11 ,12 ,13, 14]: # 不要な列をスキップ
                     continue
@@ -163,8 +181,32 @@ def scrape_today_race():
 
             trun = raceData01[3][1:2] # 回り
             row.append(trun)
+            
+            #racedata01を全て結合
+            race_data_01_all = ''
+            for data in raceData01:
+                race_data_01_all += data
 
-            #馬場,天気,場id,場名
+            # 馬場をcondition_listから判定して追加
+            for condition in condition_list:
+                if condition in race_data_01_all:
+                    row.append(condition) # 馬場
+                    break
+                else:
+                    condition = '不明' # 見つからなかった場合
+            # 天候をweather_listから判定して追加
+            for weather in weather_list:
+                if weather in race_data_01_all:
+                    row.append(weather) # 天気
+                    break
+                else:
+                    weather = "不明" # 見つからなかった場合
+
+            # 場IDと場名をidsから判定して追加
+            for id in ids:
+                if id in raceData02[1]:
+                    row.append(ids[id]) # 場ID
+                    row.append(id) # 場名
 
             print(row)
             result_table.append(row)
