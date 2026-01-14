@@ -1,15 +1,20 @@
 
 import pandas as pd
 import lightgbm as lgb
+import time
 
 # 今日のレース情報をスクレイピングするモジュールをインポート
 from create_data import scrape_today
 # CSVを整形するモジュールをインポート
 import arrange_csv
 
+start = time.time()
 # 今日のレース情報をスクレイピングしてCSVに保存
-today_csv = scrape_today.scrape_today_race()
+today_csv = scrape_today.scrape_today_race("20260112") # 引数にスクレイピングしたい日付をYYYYMMDD形式で指定
+end = time.time()
+print(f"かかった時間は {end - start} だよ") # スクレイピングにかかった時間を表示
 
+"""
 # today_csvにrace.csvをコピー
 df_today = pd.read_csv('race.csv', low_memory=False) # race.csvを読み込み
 df_today.to_csv(today_csv, index=False) # race.csvに保存
@@ -27,3 +32,4 @@ data['predicted'] = y_pred_binary
 data['prediction_score'] = y_pred
 data.to_csv('prediction_' + new_today_csv, index=False)
 print(f"Predictions saved to prediction_{new_today_csv}")
+"""
