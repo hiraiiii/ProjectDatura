@@ -50,7 +50,8 @@ def arrange_csv(csv_file):
         }
 
     filepath = csv_file
-    df = pd.read_csv(filepath,low_memory=False)
+    df = pd.read_csv(filepath,low_memory=False)    
+    df['original_index'] = df.index # 元のインデックスを保存
     print(df.info())
 
     # race_id、着順、年齢、オッズ、馬体重、を数値に変換
@@ -135,6 +136,10 @@ def arrange_csv(csv_file):
     jockey_stats['win_rate'] = jockey_stats['wins'] / jockey_stats['total_races']
     df = df.merge(jockey_stats['win_rate'], on='騎手', how='left')
     df.rename(columns={'win_rate': '騎手勝率'}, inplace=True)
+
+    # 元のインデックス順に並び替え
+    df = df.sort_values('original_index')
+    df = df.drop(columns=['original_index'])
 
     print(df.info())
     print(df.isnull().sum())
