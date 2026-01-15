@@ -89,7 +89,7 @@ def arrange_csv(csv_file):
         df[col] = le.fit_transform(df[col].astype(str))
 
     # 着順を1着は1、4着以下は0に変換
-    df['着順'] = df['着順'].apply(lambda x: 1 if x < 4 else 0)
+    df['着順'] = df['着順'].apply(lambda x: 1 if 0 < x < 4 else 0)
 
     # nanを含む行を削除
     df = df.dropna()

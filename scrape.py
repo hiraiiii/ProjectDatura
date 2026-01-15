@@ -188,7 +188,6 @@ def scrape_race_data(start_year,start_mon, end_year, end_mon, race_csv_name, pay
                 distance = re.findall(r'\d+',distance) # 数字のみ抽出
                 row.append(distance[0]) # 距離
                 
-
                 direction = p[0][1:2] # 回り
                 row.append(direction) # 回り
 

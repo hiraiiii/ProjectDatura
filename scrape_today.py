@@ -22,9 +22,8 @@ def scrape_today_race(race_date):
     kaisai_url =  'https://race.netkeiba.com/top/?kaisai_date=' #今日のレース一覧ページURL
     race_url = 'https://race.netkeiba.com/race/shutuba.html?race_id='
     race_url2 = '&rf=race_list'
-    today = time.strftime('%Y%m%d') # 今日の日付を取得 本番ではこれを使う
 
-    today_csv = today + "_race.csv"
+    today_csv = race_date + "_race.csv"
 
     ids = {
         '札幌': '01',
@@ -75,7 +74,7 @@ def scrape_today_race(race_date):
             try:
                 driver.get(race_url + race_id + race_url2)
                 wait = WebDriverWait(driver, 10)
-                # print("レースのリンク:" + race_url + race_id + race_url2)  # デバッグ用
+                print("レースのリンク:" + race_url + race_id + race_url2)  # デバッグ用
 
             except Exception as e:
                 print(f"Request failed: {e}. Retrying ({k+1}/10)...")
@@ -135,21 +134,35 @@ def scrape_today_race(race_date):
                     row.append(ranks)
                     up = 0 # 上りは0を初期値に設定
                     row.append(up)
-                    odds = tr.find("td", class_="Txt_R Popular").get_text().strip() # オッズを取得
-                    row.append(odds) # オッズを追加
-                    popularity = tr.find_all("td", class_=re.compile("^Popular Popular_Ninki"))[0].get_text().strip() # 人気を取得
-                    row.append(popularity) # 人気を追加
+                    try:
+                        odds = tr.find("td", class_="Txt_R Popular").get_text().strip() # オッズを取得
+                        row.append(odds) # オッズを追加
+                    except:
+                        row.append('0') # オッズがない場合は0を追加
+                    try:
+                        popularity = tr.find_all("td", class_=re.compile("^Popular Popular_Ninki"))[0].get_text().strip() # 人気を取得
+                        row.append(popularity) # 人気を追加
+                    except:
+                        row.append('0') # 人気がない場合は0を追加
                     continue
                 if num == 8: # 馬体重を分割して増減を取得
-                    if '(' in data:
-                        weight, change = data.split('(')
-                        change = change.replace(')', '')
-                    else:
-                        weight = data
-                        change = '0'
-                    row.append(weight)
-                    row.append(change)
-                    continue
+                    try:
+                        if '(' in data:
+                            weight, change = data.split('(') # 馬体重と増減を分割
+                            change = change.replace(')', '') # 増減の)を削除
+                        elif '-' in data:
+                            data = '0'
+                            change = '0'
+                        else:
+                            weight = data
+                            change = '0'
+                        row.append(weight)
+                        row.append(change)
+                        continue
+                    except:
+                        row.append('0')
+                        row.append('0')
+                        continue
                 row.append(data)# 他のデータはそのまま追加
             # レース名、日付、開催、クラス、芝ダート、距離、回り、馬場、天候、場ID、場名を追加
             racename = soup2.find("h1", class_="RaceName").get_text().strip() # レース名
@@ -168,7 +181,7 @@ def scrape_today_race(race_date):
 
             raceData01 = soup2.find("div", class_="RaceData01").get_text().strip() # 芝ダート、距離、天候、場ID、馬場
             raceData01 = re.split(r'\s+', raceData01)
-            print(raceData01) # デバッグ用
+            # print(raceData01) # デバッグ用
 
             details = raceData01[2][:1] # 芝ダート
             if details == 'ダ':
