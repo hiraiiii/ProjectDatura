@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 def arrange_csv(csv_file):
@@ -48,6 +49,13 @@ def arrange_csv(csv_file):
         '雨':3,
         '雪':4
         }
+    
+    # 着順の前処理: 数値化（"中"などはNaNに変換）
+    def parse_finish(x):
+        try:
+            return int(x)
+        except:
+            return np.nan
 
     filepath = csv_file
     df = pd.read_csv(filepath,low_memory=False)    
@@ -61,10 +69,14 @@ def arrange_csv(csv_file):
     # 性別を数値に変換
     df['性別'] = df['性別'].map(sex)
 
+    try:
     # クラスを数値に変換
-    for key in raceclass.keys():
-        df.loc[df['クラス'].str.contains(key, na=False), 'クラス'] = raceclass[key]
-    df['クラス'] = df['クラス'].apply(lambda s: pd.to_numeric(s, errors='coerce'))
+        df['クラス'] = df['クラス'].fillna('').astype(str)
+        for key in raceclass.keys():
+            df.loc[df['クラス'].str.contains(key, na=False,regex=False), 'クラス'] = raceclass[key]
+        df['クラス'] = df['クラス'].apply(lambda s: pd.to_numeric(s, errors='coerce'))
+    except Exception as e:
+        print(f"Error processing 'クラス': {e}")
 
     # 芝ダートを数値に変換
     df['芝ダート'] = df['芝ダート'].map(details)
@@ -89,6 +101,7 @@ def arrange_csv(csv_file):
         df[col] = le.fit_transform(df[col].astype(str))
 
     # 着順を1着は1、4着以下は0に変換
+    df['着順'] = df['着順'].apply(parse_finish) # 着順を整数に変換
     df['着順'] = df['着順'].apply(lambda x: 1 if 0 < x < 4 else 0)
 
     # nanを含む行を削除

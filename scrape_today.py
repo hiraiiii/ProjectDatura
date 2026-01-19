@@ -40,7 +40,7 @@ def scrape_today_race(race_date):
     condition_list = ['不良', '稍重', '稍', '重', '良']
     weather_list = ['小雨', '晴', '曇', '雨', '雪']
 
-    sleep_time = 20 # 本番では20秒くらいにする
+    sleep_time = 18 # 本番では20秒くらいにする
 
     with open(today_csv, mode="a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -73,7 +73,7 @@ def scrape_today_race(race_date):
         for k in range(10): # リトライ処理
             try:
                 driver.get(race_url + race_id + race_url2)
-                wait = WebDriverWait(driver, 10)
+                wait = WebDriverWait(driver, 18)
                 print("レースのリンク:" + race_url + race_id + race_url2)  # デバッグ用
 
             except Exception as e:
@@ -88,9 +88,9 @@ def scrape_today_race(race_date):
         time.sleep(sleep_time)
 
         result_table = []
-        div = soup2.find_all('div',class_="RaceTableArea")
+        div = soup2.find('div',class_="RaceTableArea")
 
-        for g,tr in enumerate(div[0].select('tr', class_="HorseList")):
+        for g,tr in enumerate(div.select('tr', class_="HorseList")):
             row = []
             if g in [0,1]: # ヘッダー行と不要行をスキップ
                 continue
