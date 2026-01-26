@@ -2,6 +2,7 @@ import lightgbm as lgb
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import re
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
@@ -79,7 +80,30 @@ print("スコア:", best_score)
 
 y_pred_binary = (y_pred > best_thr).astype(int)
 
+pay = pd.read_csv('pay.csv',engine="python",quotechar='"')
+# race_id を文字列に統一
+df["race_id"] = df["race_id"].astype(str)
+pay["race_id"] = pay["race_id"].astype(str)
 
+# fuku_dict を作成
+def parse_fukusho(row):
+    horses = re.findall(r'\d+', str(row["複勝"]))
+    pays = re.findall(r'\d+', str(row["複勝払い戻し"]))
+    return dict(zip(horses, map(int, pays)))
+
+pay["fuku_dict"] = pay.apply(parse_fukusho, axis=1)
+
+# merge
+df = df.merge(pay[["race_id", "fuku_dict"]], on="race_id", how="left")
+
+# NaN を空 dict に置き換え
+df["fuku_dict"] = df["fuku_dict"].apply(lambda x: x if isinstance(x, dict) else {})
+
+# 複勝オッズを付与
+df["複勝オッズ"] = df.apply(
+    lambda row: row["fuku_dict"].get(str(row["馬番"]), 0),
+    axis=1
+)
 
 # 評価指標の計算
 accuracy = accuracy_score(y_test, y_pred_binary)
@@ -98,12 +122,14 @@ print(f'AUC: {roc_auc}')
 test_results = x_test.copy()
 test_results['actual'] = y_test
 test_results['predicted'] = y_pred_binary
-test_results['odds'] = df.loc[test_results.index, 'オッズ']  # 元のデータからオッズを取得
+test_results['fuku_odds'] = df.loc[test_results.index, '複勝オッズ'] # 元のデータから複勝オッズを取得
 
 bet_amount = 100
 total_bets = len(test_results[test_results['predicted'] == 1])  # 賭けた回数
 total_investment = total_bets * bet_amount # 投資金額
-total_returns = (test_results[(test_results['predicted'] == 1) & (test_results['actual'] == 1)]['odds'] * bet_amount).sum()
+total_returns = (test_results[(test_results['predicted'] == 1) & 
+                              (test_results['actual'] == 1)]['fuku_odds'] * bet_amount).sum()
+
 
 # 回収率（%）
 return_rate = (total_returns / total_investment * 100) if total_investment > 0 else 0

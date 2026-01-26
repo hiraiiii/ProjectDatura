@@ -4,6 +4,7 @@ import csv
 race_csv = "202512_race.csv"
 pay_csv = "202512pay.csv"
 
+scrape = scrape.Scrape() # Scrapeクラスのインスタンス化
 with open(race_csv, mode="a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         # ヘッダー行
@@ -13,4 +14,4 @@ with open(pay_csv, mode="a", newline="", encoding="utf-8") as f:
         # ヘッダー行
         writer.writerow(['race_id','単勝','単勝払い戻し','複勝','複勝払い戻し','馬連','馬連払い戻し','ワイド','ワイド払い戻し','馬単','馬単払い戻し','三連複','三連複払い戻し','三連単','三連単払い戻し'])
 
-scrape.scrape_race_data("2025","12","2025","12",race_csv,pay_csv, 14) # 2025年12月のデータをスクレイピング
+scrape.scrape_race_data("2025","12","2025","12",race_csv,pay_csv, 14, "a") # 2025年12月のデータをスクレイピング

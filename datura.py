@@ -1,21 +1,23 @@
-
+# Main module 指定の日の競馬予測を実行する １レース1.5分程度
 import pandas as pd
 import lightgbm as lgb
 import time
 import csv
 import os
-
 # 今日のレース情報をスクレイピングするモジュールをインポート
-from create_data import scrape_today
+from create_data import scrape
 # CSVを整形するモジュールをインポート
 import arrange_csv
 
+ids = ["202606010906"]
+
 start = time.time()
 
+scrape = scrape.Scrape() # Scrapeクラスのインスタンス化
 # 今日のレース情報をスクレイピングしてCSVに保存
-#today_csv = scrape_today.scrape_today_race("20260111") # 引数にスクレイピングしたい日付をYYYYMMDD形式で指定
-today_csv = "202512_race.csv" # テスト用に固定のCSVを使う
-"""""
+today_csv = scrape.scrape_today_race(ids) # 引数にスクレイピングしたいレースのidを指定
+#today_csv = "202512_race.csv" # テスト用に固定のCSVを使う
+
 # today_csvにrace.csvをコピー
 with open("race.csv", newline="", encoding="utf-8") as src, open(today_csv, mode="a", newline="", encoding="utf-8") as dst:
     reader = csv.reader(src)
@@ -24,7 +26,7 @@ with open("race.csv", newline="", encoding="utf-8") as src, open(today_csv, mode
         if reader.line_num == 1:
             continue # ヘッダー行をスキップ
         writer.writerow(row)
-"""""
+
 # today_race.csvにarrange_csv.pyの処理を実行
 new_today_csv = arrange_csv.arrange_csv(today_csv)
 #new_today_csv = "new" + today_csv # テスト用に固定のCSV
@@ -51,8 +53,9 @@ data['predicted'] = y_pred_binary
 data['prediction_score'] = y_pred
 data.to_csv('prediction_' + today_csv, index=False)
 print(f"Predictions saved to prediction_{today_csv}")
+
 """""
-# 回収率の計算
+# テストにしようしていた回収率の計算
 total_bets = 0
 total_returns = 0
 for index, row in data.iterrows():
@@ -77,8 +80,8 @@ for index, row in data.iterrows():
 # スクレイピングと予測にかかった時間を表示
 end = time.time()
 elapsed = end - start # 経過時間を計算
-elapsed = elapsed / 60 / 60 # 時間に変換
-print(f"かかった時間は {elapsed} だよ") # スクレイピングにかかった時間を表示
+elapsed = elapsed / 60 # 分に変換
+print(f"かかった時間は {elapsed} 分だよ") # スクレイピングにかかった時間を表示
 
 # 処理が終わったことを音声で知らせる(macOSのみ)
 os.system('say "おわったにゃん！"') # ←かわいい

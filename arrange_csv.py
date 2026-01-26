@@ -1,3 +1,4 @@
+# CSVを整形するコード
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -63,7 +64,7 @@ def arrange_csv(csv_file):
     print(df.info())
 
     # race_id、着順、年齢、オッズ、馬体重、を数値に変換
-    cols = ['race_id', '着順', '年齢', 'オッズ', '馬体重']
+    cols = ['着順', '年齢', 'オッズ', '馬体重']
     df[cols] = df[cols].apply(lambda s: pd.to_numeric(s, errors='coerce'))
 
     # 性別を数値に変換
@@ -125,23 +126,14 @@ def arrange_csv(csv_file):
         df[f'直近{i}_芝ダート'] = df.groupby('馬名')['芝ダート'].shift(i)
         df[f'直近{i}_天気'] = df.groupby('馬名')['天気'].shift(i)
         df[f'直近{i}_馬場'] = df.groupby('馬名')['馬場'].shift(i)
+        df[f'直近{i}_日付差'] = (df['日付'] - df.groupby('馬名')['日付'].shift(i)).dt.days # 日付差を追加
+        df[f'直近{i}_距離差'] = df['距離'] - df.groupby('馬名')['距離'].shift(i) # 距離差を追加
+        df[f'直近{i}_平均着順'] = df.groupby('馬名')[f'直近{i}_斤量'].transform('mean') # 直近5レースの平均斤量を追加
 
-    # 日付差を追加
-    for i in range(1, 6):
-        df[f'直近{i}_日付差'] = (df['日付'] - df.groupby('馬名')['日付'].shift(i)).dt.days 
+    df = df.copy()
 
     # nanを0に置換
     df = df.fillna(0)
-
-    '''
-    # 距離差を追加
-    for i in range(1, 6):
-        df[f'直近{i}_距離差'] = df['距離'] - df.groupby('馬名')['距離'].shift(i) # エラー
-        
-    # 直近5レースの平均斤量を追加
-    for i in range(1, 6):
-        df[f'直近{i}_平均着順'] = df.groupby('馬名')[f'直近{i}_斤量'].transform('mean')  # エラー
-    '''
 
     # 騎手の勝率を追加
     jockey_stats = df.groupby('騎手').agg({'着順': ['count', lambda x: (x == 1).sum()]})
